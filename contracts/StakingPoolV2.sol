@@ -23,8 +23,9 @@ contract StakingPoolV2 is IStakingPool, Ownable {
     mapping(uint256 => uint256) public legacyRate;
 
     IERC20 public immutable token;
-    uint256 public constant SEC_PER_DAY = 86400; // number of seconds per day
+    uint256 public constant SEC_PER_DAY = 1 days; // number of seconds per day
     uint256 public constant DENOM = 365000000; //or, maybe 365250000 (1 year = 365 and 1/4 days)
+    uint256 public constant ADJ = 1e18; // to improve the precision when calculating reward
 
     constructor(address _tokenAddress, uint256 _rate) Ownable() {
         token = IERC20(_tokenAddress);
@@ -34,18 +35,34 @@ contract StakingPoolV2 is IStakingPool, Ownable {
     }
 
     function updatePool() public {
-        // PoolInfo storage pool = poolInfo[_pid];
         uint256 stamp = block.timestamp / SEC_PER_DAY; // 0h00 stamp
         if (stamp <= lastRewardDay)
             return;        
 
         uint256 nDay = stamp - lastRewardDay;
-        accRewardPerToken += nDay * rate * 1e12 / DENOM;
+        accRewardPerToken += nDay * rate * ADJ / DENOM;
         lastRewardDay = stamp;
     }
 
-    function updateRate(uint256 newRate) external onlyOwner {
-        require(rate != newRate, "New rate must be different");
+    function unclaimedReward(address _user) public view returns(uint256 pending){
+        uint256 stamp = block.timestamp / SEC_PER_DAY; // 0h00 stamp
+        UserInfo storage user = userInfo[_user];    
+
+        uint256 nDay = stamp - lastRewardDay;
+        uint256 tmpAccRewardPerToken = accRewardPerToken + nDay * rate * ADJ / DENOM;
+
+        pending = user.unclaimedReward;
+        if (user.stakingAmount > 0 && nDay > 0) {
+            uint256 r = legacyRate[user.lastChange];
+
+            pending +=
+                user.stakingAmount * tmpAccRewardPerToken / ADJ - user.rewardDebt - 
+                    (user.stakingAmount - user.oldStakingAmount) * r / DENOM;
+        }
+    }
+
+    function updateRate(uint256 _newRate) external onlyOwner {
+        require(rate != _newRate, "New rate must be different");
         updatePool();
 
         uint256 stamp = block.timestamp / SEC_PER_DAY;
@@ -53,7 +70,7 @@ contract StakingPoolV2 is IStakingPool, Ownable {
         // for (uint256 i = 0; i < stakers.length; i++) 
         //     settle(stakers[i], stamp);
 
-        rate = newRate;
+        rate = _newRate;
         legacyRate[stamp] = rate;
 
         emit UpdateRate(rate);
@@ -72,12 +89,12 @@ contract StakingPoolV2 is IStakingPool, Ownable {
             uint256 r = legacyRate[user.lastChange];
 
             user.unclaimedReward +=
-                user.stakingAmount * accRewardPerToken / 1e12 - user.rewardDebt - 
+                user.stakingAmount * accRewardPerToken / ADJ - user.rewardDebt - 
                     (user.stakingAmount - user.oldStakingAmount) * r / DENOM;
             user.oldStakingAmount = user.stakingAmount;
         }
         user.stakingAmount += _amount;
-        user.rewardDebt = user.stakingAmount * accRewardPerToken / 1e12;
+        user.rewardDebt = user.stakingAmount * accRewardPerToken / ADJ;
 
         user.lastChange = stamp;
         legacyRate[stamp] = rate;
@@ -104,7 +121,7 @@ contract StakingPoolV2 is IStakingPool, Ownable {
             uint256 r = legacyRate[user.lastChange];
 
             user.unclaimedReward +=
-                user.stakingAmount * accRewardPerToken / 1e12 - user.rewardDebt - 
+                user.stakingAmount * accRewardPerToken / ADJ - user.rewardDebt - 
                     (user.stakingAmount - user.oldStakingAmount) * r / DENOM;
             user.oldStakingAmount = user.stakingAmount;
         }    
@@ -117,7 +134,7 @@ contract StakingPoolV2 is IStakingPool, Ownable {
             ? (user.oldStakingAmount - _amount)
             : 0;
 
-        user.rewardDebt = user.stakingAmount * accRewardPerToken / 1e12;
+        user.rewardDebt = user.stakingAmount * accRewardPerToken / ADJ;
         user.lastChange = stamp;
         legacyRate[stamp] = rate;
 
