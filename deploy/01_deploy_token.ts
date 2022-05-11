@@ -17,11 +17,7 @@ const deployToken: DeployFunction = async function (
         log: true,
     });
     log(`Deploy SPO Token to address ${SPOToken.address}`);
-
-    const accounts = await hre.ethers.getSigners()
-    for (const account of accounts) {
-        console.log(account.address);
-    }};
+};
 
 export default deployToken;
-module.exports.tags = ["all", "v1", "v2"];
+module.exports.tags = ["all"];

@@ -26,7 +26,6 @@ const deployFarm: DeployFunction = async function (
 
     const feed_tx = await SPOTokenContract.approve(
         StakingPool.address,
-        // 100000000
         "1000000000000000000000000" //1000000 SPO
     );
     await feed_tx.wait(1);
@@ -43,4 +42,4 @@ const deployFarm: DeployFunction = async function (
 };
 
 export default deployFarm;
-module.exports.tags = ["all", "v1"];
+module.exports.tags = ["all"];
