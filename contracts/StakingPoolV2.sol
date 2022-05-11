@@ -86,14 +86,8 @@ contract StakingPoolV2 is IStakingPool, Ownable {
         uint256 stamp = block.timestamp / SEC_PER_DAY;
         uint256 nDay = stamp - user.lastChange;
 
-        if (user.stakingAmount > 0 && nDay > 0) {
-            uint256 r = legacyRate[user.lastChange];
+        if (user.stakingAmount > 0 && nDay > 0) settle(user);
 
-            user.unclaimedReward +=
-                user.stakingAmount * accRewardPerToken / ADJ - user.rewardDebt - 
-                    (user.stakingAmount - user.oldStakingAmount) * r / DENOM;
-            user.oldStakingAmount = user.stakingAmount;
-        }
         user.stakingAmount += _amount;
         user.rewardDebt = user.stakingAmount * accRewardPerToken / ADJ;
 
@@ -118,18 +112,10 @@ contract StakingPoolV2 is IStakingPool, Ownable {
         uint256 stamp = block.timestamp / SEC_PER_DAY;
         uint256 nDay = stamp - user.lastChange;
 
-        if (nDay > 0) {
-            uint256 r = legacyRate[user.lastChange];
-
-            user.unclaimedReward +=
-                user.stakingAmount * accRewardPerToken / ADJ - user.rewardDebt - 
-                    (user.stakingAmount - user.oldStakingAmount) * r / DENOM;
-            user.oldStakingAmount = user.stakingAmount;
-        }    
+        if (nDay > 0) settle(user);
 
         uint256 reward = user.unclaimedReward;
         user.unclaimedReward = 0;
-
         user.stakingAmount -= _amount;
         user.oldStakingAmount = user.oldStakingAmount > _amount
             ? (user.oldStakingAmount - _amount)
@@ -149,5 +135,14 @@ contract StakingPoolV2 is IStakingPool, Ownable {
             "Transfer failed"
         );
         emit Unstake(msg.sender, _amount);
+    }
+
+    function settle(UserInfo storage _user) internal {
+        uint256 r = legacyRate[_user.lastChange];
+
+        _user.unclaimedReward +=
+                _user.stakingAmount * accRewardPerToken / ADJ - _user.rewardDebt - 
+                    (_user.stakingAmount - _user.oldStakingAmount) * r / DENOM;
+        _user.oldStakingAmount = _user.stakingAmount;
     }
 }
