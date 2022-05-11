@@ -20,6 +20,6 @@ yarn hardhat run scripts/<filename>.ts --network localhost
 ```
 
 In the scripts, the staking contract hold the staking token, while deployer (owner) hold the reward. The deployer need to allow staking contract to transfer reward from the deployer's address.
-As the deploy and script use `increaseTime` call, it can run on local testnet only.
+As the deploy and script use `increaseTime` call, it can run on local testnet only.  
 Can specify which contract version to deploy by changing VERSION variable in .env file (V2 is default).
 
