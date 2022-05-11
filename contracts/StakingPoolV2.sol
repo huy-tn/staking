@@ -26,7 +26,7 @@ contract StakingPoolV2 is IStakingPool, Ownable {
     IERC20 public immutable token;
     uint256 public constant SEC_PER_DAY = 1 days; // number of seconds per day
     uint256 public constant DENOM = 365000000; //or, maybe 365250000 (1 year = 365 and 1/4 days)
-    uint256 public constant ADJ = 1e18; // to improve the precision when calculating reward
+    uint256 public constant ADJ = 1e12; // to improve the precision when calculating reward
 
     constructor(address _tokenAddress, uint256 _rate) Ownable() {
         token = IERC20(_tokenAddress);
@@ -41,7 +41,7 @@ contract StakingPoolV2 is IStakingPool, Ownable {
             return;        
 
         uint256 nDay = stamp - lastRewardDay;
-        accRewardPerToken += nDay * rate * ADJ / DENOM;
+        accRewardPerToken += nDay * rate * ADJ;
         lastRewardDay = stamp;
     }
 
@@ -50,16 +50,17 @@ contract StakingPoolV2 is IStakingPool, Ownable {
         UserInfo storage user = userInfo[_user];    
 
         uint256 nDay = stamp - lastRewardDay;
-        uint256 tmpAccRewardPerToken = accRewardPerToken + nDay * rate * ADJ / DENOM;
+        uint256 tmpAccRewardPerToken = accRewardPerToken + nDay * rate * ADJ;
 
-        pending = user.unclaimedReward;
+        uint256 rawPending = user.unclaimedReward;
         if (user.stakingAmount > 0 && nDay > 0) {
             uint256 r = legacyRate[user.lastChange];
 
-            pending +=
+            rawPending +=
                 user.stakingAmount * tmpAccRewardPerToken / ADJ - user.rewardDebt - 
-                    (user.stakingAmount - user.oldStakingAmount) * r / DENOM;
+                    (user.stakingAmount - user.oldStakingAmount) * r;
         }
+        pending = rawPending / DENOM;
     }
 
     function updateRate(uint256 _newRate) external onlyOwner {
@@ -114,7 +115,7 @@ contract StakingPoolV2 is IStakingPool, Ownable {
 
         if (nDay > 0) settle(user);
 
-        uint256 reward = user.unclaimedReward;
+        uint256 reward = user.unclaimedReward / DENOM;
         user.unclaimedReward = 0;
         user.stakingAmount -= _amount;
         user.oldStakingAmount = user.oldStakingAmount > _amount
@@ -142,7 +143,7 @@ contract StakingPoolV2 is IStakingPool, Ownable {
 
         _user.unclaimedReward +=
                 _user.stakingAmount * accRewardPerToken / ADJ - _user.rewardDebt - 
-                    (_user.stakingAmount - _user.oldStakingAmount) * r / DENOM;
+                    (_user.stakingAmount - _user.oldStakingAmount) * r;
         _user.oldStakingAmount = _user.stakingAmount;
     }
 }
