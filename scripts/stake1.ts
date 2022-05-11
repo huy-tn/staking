@@ -3,10 +3,7 @@ import { moveTime } from "../utils/move_time";
 import { moveBlocks } from "../utils/move_blocks";
 require("dotenv").config();
 
-// const hre = require("hardhat");
-// const ethers = hre.ethers;
-// const network = hre.network;
-
+// just run on local network, since we have to increase time
 export async function stake() {
     const VERSION = process.env.VERSION;
 
@@ -49,19 +46,20 @@ export async function stake() {
     console.log(`allowance ${allowanceAlicePool.toString()}`);
     await StakingPool.connect(alice).stake("100000000000000000000000");
 
-    await moveTime(14 * 3600 * 24);
+    await moveTime(14 * 3600 * 24); // 14 days later...
     await StakingPool.connect(alice).stake("50000000000000000000000");
 
     const balance_alice_1 = await SPOToken.balanceOf(alice.address);
     console.log(`Alice's balance ${balance_alice_1.toString()}`);
 
-    await moveTime(15 * 3600 * 24);
-    await moveBlocks(1); // make block stamp update by mining 1 block
+    await moveTime(15 * 3600 * 24); // 15 days later...
+    await moveBlocks(1); // make block stamp update by mining 1 dummy block
 
     // retrieve unclaimed reward
     let unclaimed = await StakingPool.unclaimedReward(alice.address);
     console.log(`Alice's unclaimed reward ${unclaimed.toString()}`);
 
+    await StakingPool.updateRate('70000');
     await StakingPool.connect(alice).unstake("70000000000000000000000");
 
     const balance_alice_2 = await SPOToken.balanceOf(alice.address);

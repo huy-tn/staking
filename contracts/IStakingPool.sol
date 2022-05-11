@@ -10,5 +10,4 @@ interface IStakingPool {
     function stake(uint256 amount) external;
     function unstake(uint256 amount) external;
     function unclaimedReward(address _user) external view returns(uint256);
-
 }
