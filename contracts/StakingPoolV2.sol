@@ -102,10 +102,7 @@ contract StakingPoolV2 is IStakingPool, Ownable {
         user.lastChange = stamp;
         legacyRate[stamp] = rate;
 
-        require(
-            token.transferFrom(msg.sender, address(this), _amount),
-            "Transfer failed"
-        );
+        token.transferFrom(msg.sender, address(this), _amount);
 
         emit Stake(msg.sender, _amount);
     }
@@ -133,12 +130,9 @@ contract StakingPoolV2 is IStakingPool, Ownable {
         user.lastChange = stamp;
         legacyRate[stamp] = rate;
 
-        require(token.transfer(msg.sender, _amount), "Transfer failed");
+        token.transfer(msg.sender, _amount);
+        token.transferFrom(rewardPoolAddress, msg.sender, reward);
 
-        require(
-            token.transferFrom(rewardPoolAddress, msg.sender, reward),
-            "Transfer failed"
-        );
         emit Unstake(msg.sender, _amount);
     }
 
