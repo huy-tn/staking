@@ -37,15 +37,18 @@ contract StakingPoolV2 is IStakingPool, Ownable {
 
     function updatePool() public {
         uint256 stamp = block.timestamp / SEC_PER_DAY; // 0h00 stamp
-        if (stamp <= lastRewardDay)
-            return;        
+        if (stamp <= lastRewardDay) return;
 
         uint256 nDay = stamp - lastRewardDay;
         accRewardPerToken += nDay * rate * ADJ;
         lastRewardDay = stamp;
     }
 
-    function unclaimedReward(address _user) public view returns(uint256 pending){
+    function unclaimedReward(address _user)
+        public
+        view
+        returns (uint256 pending)
+    {
         uint256 stamp = block.timestamp / SEC_PER_DAY; // 0h00 stamp
         UserInfo storage user = userInfo[_user];    
 
@@ -61,6 +64,10 @@ contract StakingPoolV2 is IStakingPool, Ownable {
                     (user.stakingAmount - user.oldStakingAmount) * r;
         }
         pending = rawPending / DENOM;
+    }
+
+    function stakingAmount(address _user) public view returns (uint256) {
+        return userInfo[_user].stakingAmount;
     }
 
     function updateRate(uint256 _newRate) external onlyOwner {
@@ -90,7 +97,7 @@ contract StakingPoolV2 is IStakingPool, Ownable {
         if (user.stakingAmount > 0 && nDay > 0) settle(user);
 
         user.stakingAmount += _amount;
-        user.rewardDebt = user.stakingAmount * accRewardPerToken / ADJ;
+        user.rewardDebt = (user.stakingAmount * accRewardPerToken) / ADJ;
 
         user.lastChange = stamp;
         legacyRate[stamp] = rate;
@@ -115,21 +122,18 @@ contract StakingPoolV2 is IStakingPool, Ownable {
 
         if (nDay > 0) settle(user);
 
-        uint256 reward = user.unclaimedReward / DENOM;
+        uint256 reward = user.unclaimedReward / DENOM; // all the value are multiplied by DENOM until now
         user.unclaimedReward = 0;
         user.stakingAmount -= _amount;
         user.oldStakingAmount = user.oldStakingAmount > _amount
             ? (user.oldStakingAmount - _amount)
             : 0;
 
-        user.rewardDebt = user.stakingAmount * accRewardPerToken / ADJ;
+        user.rewardDebt = (user.stakingAmount * accRewardPerToken) / ADJ;
         user.lastChange = stamp;
         legacyRate[stamp] = rate;
 
-        require(
-            token.transfer(msg.sender, _amount),
-            "Transfer failed"
-        );
+        require(token.transfer(msg.sender, _amount), "Transfer failed");
 
         require(
             token.transferFrom(rewardPoolAddress, msg.sender, reward),

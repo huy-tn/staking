@@ -7,7 +7,12 @@ interface IStakingPool {
     event Unstake(address indexed, uint256);
 
     function updateRate(uint256 newRate) external;
+
     function stake(uint256 amount) external;
+
     function unstake(uint256 amount) external;
-    function unclaimedReward(address _user) external view returns(uint256);
+
+    function unclaimedReward(address _user) external view returns (uint256);
+
+    function stakingAmount(address _user) external view returns (uint256);
 }
