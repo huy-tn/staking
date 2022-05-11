@@ -95,7 +95,8 @@ contract StakingPool is IStakingPool, Ownable {
     }
 
     // public function to retrieve unclaimed reward more exactly, because private state mapping is lazy
-    // function unclaimedReward(address staker) public {
-
-    // }
+    // here, the private state is returned, so this is not an up-to-day output
+    function unclaimedReward(address staker) public view returns(uint256){
+        return _unclaimedReward[staker];
+    }
 }

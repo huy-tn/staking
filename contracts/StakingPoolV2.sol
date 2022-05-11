@@ -20,7 +20,8 @@ contract StakingPoolV2 is IStakingPool, Ownable {
     address public rewardPoolAddress;
 
     mapping(address => UserInfo) public userInfo;
-    mapping(uint256 => uint256) public legacyRate;
+    // to store past rate, mapping is more convenient. Array can be used for saving memory
+    mapping(uint256 => uint256) public legacyRate; 
 
     IERC20 public immutable token;
     uint256 public constant SEC_PER_DAY = 1 days; // number of seconds per day
